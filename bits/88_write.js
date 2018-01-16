@@ -1,5 +1,9 @@
 function write_zip_type(wb/*:Workbook*/, opts/*:?WriteOpts*/) {
 	var o = opts||{};
+	
+	// s42: add style builder
+	style_builder  = new StyleBuilder(opts);
+
 	var z = write_zip(wb, o);
 	var oopts = {};
 	if(o.compression) oopts.compression = 'DEFLATE';
