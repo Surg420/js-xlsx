@@ -37,13 +37,22 @@ function default_margins(margins/*:Margins*/, mode/*:?string*/) {
 	if(margins.footer == null) margins.footer = defs[5];
 }
 
-function get_cell_style(styles/*:Array<any>*/, cell/*:Cell*/, opts) {
+function get_cell_style(styles, cell, opts) {
+
+	// s42: add style builder
+	if (typeof style_builder != 'undefined') {
+		if (/^\d+$/.exec(cell.s)) { return cell.s}  // if its already an integer index, let it be
+		if (cell.s && (cell.s == +cell.s)) { return cell.s}  // if its already an integer index, let it be
+		var s = cell.s || {};
+		if (cell.z) s.numFmt = cell.z;
+		return style_builder.addStyle(s);
+	}
+
 	var z = opts.revssf[cell.z != null ? cell.z : "General"];
 	var i = 0x3c, len = styles.length;
 	if(z == null && opts.ssf) {
 		for(; i < 0x188; ++i) if(opts.ssf[i] == null) {
 			SSF.load(cell.z, i);
-			// $FlowIgnore
 			opts.ssf[i] = cell.z;
 			opts.revssf[cell.z] = z = i;
 			break;
@@ -61,7 +70,7 @@ function get_cell_style(styles/*:Array<any>*/, cell/*:Cell*/, opts) {
 	return len;
 }
 
-function safe_format(p/*:Cell*/, fmtid/*:number*/, fillid/*:?number*/, opts, themes, styles) {
+function safe_format(p, fmtid/*:number*/, fillid/*:number*/, opts, themes, styles) {
 	if(p.t === 'z') return;
 	if(p.t === 'd' && typeof p.v === 'string') p.v = parseDate(p.v);
 	try {
@@ -85,8 +94,7 @@ function safe_format(p/*:Cell*/, fmtid/*:number*/, fillid/*:?number*/, opts, the
 		else if(p.t === 'd') p.w = SSF.format(fmtid,datenum(p.v),_ssfopts);
 		else p.w = SSF.format(fmtid,p.v,_ssfopts);
 	} catch(e) { if(opts.WTF) throw e; }
-	if(!opts.cellStyles) return;
-	if(fillid != null) try {
+	if(fillid) try {
 		p.s = styles.Fills[fillid];
 		if (p.s.fgColor && p.s.fgColor.theme && !p.s.fgColor.rgb) {
 			p.s.fgColor.rgb = rgb_tint(themes.themeElements.clrScheme[p.s.fgColor.theme].rgb, p.s.fgColor.tint || 0);
@@ -96,5 +104,5 @@ function safe_format(p/*:Cell*/, fmtid/*:number*/, fillid/*:?number*/, opts, the
 			p.s.bgColor.rgb = rgb_tint(themes.themeElements.clrScheme[p.s.bgColor.theme].rgb, p.s.bgColor.tint || 0);
 			if(opts.WTF) p.s.bgColor.raw_rgb = themes.themeElements.clrScheme[p.s.bgColor.theme].rgb;
 		}
-	} catch(e) { if(opts.WTF && styles.Fills) throw e; }
+	} catch(e) { if(opts.WTF) throw e; }
 }
